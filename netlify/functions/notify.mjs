@@ -33,7 +33,10 @@ export default async (req) => {
 
   const html = `
     <div style="font-family:-apple-system,Segoe UI,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#17251F;">
-      <div style="font-weight:800;font-size:18px;color:#592A8A;margin-bottom:16px;">Pirate Sublease</div>
+      <div style="text-align:center;margin-bottom:16px;">
+        <img src="https://piratesublease.com/logo.png" alt="Pirate Sublease" width="56" height="56" style="display:inline-block;vertical-align:middle;"/>
+        <div style="font-weight:800;font-size:18px;color:#592A8A;margin-top:6px;">Pirate Sublease</div>
+      </div>
       <p style="font-size:15px;line-height:1.6;">Hi ${first},</p>
       <p style="font-size:15px;line-height:1.6;"><b>${esc(from_name)}</b> just messaged you about "<b>${esc(listing_title)}</b>":</p>
       <div style="background:#F4EEFB;border-left:3px solid #592A8A;padding:12px 16px;border-radius:8px;font-size:15px;line-height:1.5;margin:14px 0;">${esc(message_text)}</div>
@@ -65,4 +68,4 @@ export default async (req) => {
   } catch (e) {
     return new Response(JSON.stringify({ error: "Send error" }), { status: 500 });
   }
-}; 
+};
