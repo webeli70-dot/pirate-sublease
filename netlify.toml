@@ -1,0 +1,7 @@
+# Netlify configuration for Pirate Sublease
+# Tells Netlify where the serverless functions live and that this is a
+# static site (no build step needed — it's a single index.html).
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
