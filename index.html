@@ -499,6 +499,24 @@ input, select, textarea { font-family:inherit; font-size:15px; }
 .review-text { font-size:14px; line-height:1.55; color:var(--ink); margin:8px 0; }
 .review-by { font-size:12.5px; color:var(--ink-3); font-weight:600; }
 
+/* ══ NOTIFY NOTE ══ */
+.notify-note {
+  font-size:12px; color:var(--ink-3); font-weight:600; margin-top:10px; text-align:center;
+  line-height:1.5;
+}
+
+/* ══ VERIFY BANNER ══ */
+.verify-banner {
+  display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;
+  background:linear-gradient(90deg,#FDC82F,#FFD84D); color:#4A2500; padding:10px 16px;
+  font-size:13px; font-weight:600; text-align:center;
+}
+.vb-btn {
+  background:#592A8A; color:#fff; border:none; border-radius:99px; padding:6px 16px;
+  font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;
+}
+.vb-btn:hover { background:#4A2277; }
+
 /* ══ ABOUT PAGE ══ */
 .about-sheet { max-width:640px; }
 .about-hero { margin:8px 0 28px; }
@@ -635,6 +653,11 @@ input, select, textarea { font-family:inherit; font-size:15px; }
     <button class="nav-btn primary" id="nav-signup" onclick="openSheet('signup')">Sign up</button>
   </div>
 </nav>
+
+<div id="verify-banner" class="verify-banner" style="display:none;">
+  <span class="vb-text">📬 Check your inbox to verify your email — you'll need it to post or message.</span>
+  <button class="vb-btn" onclick="resendVerification()">Resend</button>
+</div>
 <div class="demo-banner" id="demo-banner" style="display:none;">Demo mode — listings save to this device only until Firebase is connected</div>
 
 
@@ -759,7 +782,7 @@ input, select, textarea { font-family:inherit; font-size:15px; }
       <ul class="about-list">
         <li><b>Post a sublease</b> — add photos, price, dates, amenities, and a map pin. It stays up until you take it down.</li>
         <li><b>Or post that you're looking</b> — say your budget and move-in dates, and let people with open places reach out to you.</li>
-        <li><b>Message in the app</b> — talk to the other person directly. Your phone number and email stay private until you choose to share them.</li>
+        <li><b>Message in the app</b> — talk to the other person directly, and get an email the moment someone messages you so you never miss a lead. Your phone number and email stay private until you choose to share them.</li>
         <li><b>Save favorites</b> — heart the listings you like and find them again in your profile.</li>
         <li><b>Browse by complex, price, or type</b> — filter to apartments, houses, private rooms, or studios near campus.</li>
       </ul>
@@ -793,7 +816,7 @@ input, select, textarea { font-family:inherit; font-size:15px; }
 <div class="overlay" id="ov-post" onclick="bgClose(event,'post')">
   <div class="sheet">
     <h2 id="post-heading">Post your sublease</h2>
-    <p class="sub" id="post-sub">Free. Stays visible until you take it down. Listings with photos get way more messages.</p>
+    <p class="sub" id="post-sub">Free. Stays visible until you take it down. We'll email you the moment someone messages you — no need to keep checking back.</p>
     <div class="f">
       <div class="mode-row">
         <button type="button" class="mode-btn on" id="mode-have" onclick="setPostMode('have')">I have a place</button>
@@ -989,7 +1012,7 @@ input, select, textarea { font-family:inherit; font-size:15px; }
   <div class="chat-body" id="chat-body"></div>
   <div class="chat-quick" id="chat-quick"></div>
   <div class="chat-input-row">
-    <input id="chat-input" placeholder="Type your question…" onkeydown="if(event.key==='Enter')sendChat()"/>
+    <input id="chat-input" placeholder="Type your question…" onfocus="markChatInteraction()" onkeydown="if(event.key==='Enter')sendChat()"/>
     <button onclick="sendChat()">Send</button>
   </div>
 </div>
@@ -1148,8 +1171,8 @@ function setPostMode(m) {
   const have = m === "have";
   document.getElementById("post-heading").textContent = have ? "Post your sublease" : "Post what you're looking for";
   document.getElementById("post-sub").textContent = have
-    ? "Free. Stays visible until you take it down. Listings with photos get way more messages."
-    : "Free. Let people with open leases find YOU. Say your budget, dates, and a little about yourself.";
+    ? "Free. Stays visible until you take it down. We'll email you the moment someone messages you — no need to keep checking back."
+    : "Free. Let people with open leases find you — and we'll email you as soon as someone reaches out.";
   document.getElementById("f-photos").style.display = have ? "" : "none";
   document.getElementById("f-video").style.display = have ? "" : "none";
   document.getElementById("f-urgent").style.display = have ? "" : "none";
@@ -1204,17 +1227,20 @@ function loadState() {
           name: (userDocData && userDocData.name) || u.displayName || "Pirate",
           avatar: (userDocData && userDocData.avatar) || "",
           verified: userDocData ? !!userDocData.verified : isEduEmail(u.email || ""),
+          emailVerified: userDocData ? !!userDocData.emailVerified : false,
           favorites: (userDocData && Array.isArray(userDocData.favorites)) ? userDocData.favorites.map(String) : [],
         };
       } catch(e) {
-        user = { uid: u.uid, email: (u.email||"").toLowerCase(), name: u.displayName || "Pirate", avatar: "", verified: isEduEmail(u.email||"") };
+        user = { uid: u.uid, email: (u.email||"").toLowerCase(), name: u.displayName || "Pirate", avatar: "", verified: isEduEmail(u.email||""), emailVerified: false };
       }
       subscribeConvos();
+      updateVerifyBanner();
     } else {
       user = null;
       userDocData = null;
       if (convosUnsub) { convosUnsub(); convosUnsub = null; }
       convos = [];
+      updateVerifyBanner();
     }
     renderAuthState();
     applyFilters();
@@ -1495,6 +1521,7 @@ function contactBlock(l) {
       </div>
     </div>
     <button class="btn-main" style="margin-top:12px;" onclick="startConversation('${l.id}')">Message ${first} in the app</button>
+    <div class="notify-note">✉️ ${first} gets an email as soon as you send — so your message won't be missed.</div>
   </div>`;
 }
 
@@ -1636,6 +1663,7 @@ function myConvos() {
 async function startConversation(listingId) {
   const l = listings.find(x => String(x.id) === String(listingId));
   if (!l || !user) return;
+  if (!requireVerified()) { closeSheet("detail"); return; }
   let c = convos.find(c => String(c.listingId) === String(l.id) && c.participants.includes(user.email));
   if (!c) {
     try {
@@ -1756,6 +1784,7 @@ function startPost() {
   document.getElementById("post-heading").textContent = "Post your sublease";
   const pb = document.querySelector("#ov-post .btn-main"); if (pb) pb.textContent = "Publish listing";
   if (!user) { postAfterAuth = true; openSheet("signup"); return; }
+  if (!requireVerified()) return;
   openSheet("post");
 }
 
@@ -1930,6 +1959,73 @@ async function socialSignIn(providerName) {
 // ── ACCOUNTS ──
 // Demo accounts live in this browser's localStorage. Passwords are NOT stored
 // (never store plaintext passwords) — in demo mode sign-in matches by email only.
+// ── EMAIL VERIFICATION (custom "Ava" flow) ──
+function genToken() {
+  const rand = () => Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  return (rand() + rand() + Date.now().toString(36)).slice(0, 48);
+}
+function sendVerificationEmail(email, name, token) {
+  const link = location.origin + "/?verify=" + encodeURIComponent(token);
+  fetch("/.netlify/functions/verify-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to_email: email, to_name: name || "there", verify_link: link }),
+  }).catch(() => {});
+}
+async function resendVerification() {
+  if (!user || !FB_OK) return;
+  try {
+    const token = genToken();
+    await db.collection("users").doc(user.uid).update({ verifyToken: token, verifyTokenCreated: Date.now() });
+    sendVerificationEmail(user.email, user.name, token);
+    toast("Verification email sent — check your inbox.");
+  } catch(e) { toast("Couldn't resend — try again in a moment."); }
+}
+async function handleVerifyLink() {
+  const params = new URLSearchParams(location.search);
+  const token = params.get("verify");
+  if (!token || !FB_OK) return;
+  try {
+    const snap = await db.collection("users").where("verifyToken", "==", token).limit(1).get();
+    if (snap.empty) { toast("That verification link is invalid or already used."); cleanVerifyUrl(); return; }
+    const doc = snap.docs[0];
+    const data = doc.data();
+    const age = Date.now() - (data.verifyTokenCreated || 0);
+    if (age > 3 * 24 * 60 * 60 * 1000) {
+      toast("That link expired. Sign in and tap resend to get a new one.");
+      cleanVerifyUrl(); return;
+    }
+    await db.collection("users").doc(doc.id).update({ emailVerified: true, verifyToken: "" });
+    if (user && user.uid === doc.id) user.emailVerified = true;
+    toast("Email verified — you're all set!");
+    updateVerifyBanner();
+    cleanVerifyUrl();
+  } catch(e) { toast("Couldn't verify right now — try the link again."); cleanVerifyUrl(); }
+}
+function cleanVerifyUrl() {
+  history.replaceState({}, "", location.origin + location.pathname);
+}
+function updateVerifyBanner() {
+  const b = document.getElementById("verify-banner");
+  if (!b) return;
+  // Show only when signed in AND not yet email-verified
+  b.style.display = (user && !user.emailVerified) ? "flex" : "none";
+}
+function showVerifyBanner() {
+  const b = document.getElementById("verify-banner");
+  if (b && user && !user.emailVerified) {
+    b.style.display = "flex";
+    b.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+function requireVerified() {
+  if (!user) { openSheet("signup"); return false; }
+  if (user.emailVerified) return true;
+  toast("Verify your email first — check your inbox for the link from Ava.");
+  showVerifyBanner();
+  return false;
+}
+
 // FIREBASE: Firebase Auth (createUserWithEmailAndPassword / signInWithEmailAndPassword)
 // replaces all of this and handles passwords securely.
 const LS_USERS = "pirateSubleaseAccounts";
@@ -1992,15 +2088,22 @@ async function doSignUp() {
   }
   try {
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    // Generate a verification token for our custom Ava email flow.
+    const verifyToken = genToken();
     await db.collection("users").doc(cred.user.uid).set({
       email, name,
       avatar: "",
       isStudent: isStudentChoice,
-      verified: isEduEmail(email),
+      verified: isEduEmail(email),        // .edu "Student verified" badge (separate concept)
+      emailVerified: false,               // custom email-verification gate
+      verifyToken: verifyToken,
+      verifyTokenCreated: Date.now(),
       created: Date.now(),
     });
     // onAuthStateChanged will populate `user`; set name locally for instant UI
-    user = { uid: cred.user.uid, email, name, avatar: "", verified: isEduEmail(email) };
+    user = { uid: cred.user.uid, email, name, avatar: "", verified: isEduEmail(email), emailVerified: false };
+    // Fire off the Ava verification email (non-blocking — signup continues either way)
+    sendVerificationEmail(email, name, verifyToken);
     closeSheet("signup");
     renderAuthState();
     pendingAvatar = null;
@@ -2318,6 +2421,9 @@ const CHAT_FALLBACK = "I'm not sure about that one — but you can post, browse,
 const CHAT_QUICK = ["How do I post?", "Is it free?", "How does verification work?", "How do I message someone?"];
 
 let chatStarted = false;
+let chatAutoCloseTimer = null;
+let chatInteracted = false;
+
 function toggleChat() {
   const panel = document.getElementById("chat-panel");
   const open = panel.classList.toggle("open");
@@ -2326,12 +2432,44 @@ function toggleChat() {
     botSay("Ahoy! I can help you figure out how Pirate Sublease works. What do you want to know?");
     renderChatQuick();
   }
+  // Any manual toggle counts as interaction — cancel the auto-close
+  if (open) { chatInteracted = true; if (chatAutoCloseTimer) { clearTimeout(chatAutoCloseTimer); chatAutoCloseTimer = null; } }
+}
+
+// Auto-greet: pop the chat open on first visit, then tuck it back into the
+// circle after 10s if the person hasn't interacted with it.
+function autoGreet() {
+  // Only greet once per browser (don't nag returning visitors every load)
+  try { if (sessionStorage.getItem("greeted")) return; sessionStorage.setItem("greeted", "1"); } catch(e) {}
+  setTimeout(() => {
+    const panel = document.getElementById("chat-panel");
+    if (!panel || panel.classList.contains("open")) return;
+    panel.classList.add("open");
+    if (!chatStarted) {
+      chatStarted = true;
+      botSay("Ahoy! 👋 Welcome to Pirate Sublease — the free sublease board for Greenville students. Need a hand getting started?");
+      renderChatQuick();
+    }
+    // Start the 10s auto-close countdown
+    chatAutoCloseTimer = setTimeout(() => {
+      if (!chatInteracted) {
+        const p = document.getElementById("chat-panel");
+        if (p) p.classList.remove("open");
+      }
+    }, 10000);
+  }, 1200); // small delay so it feels intentional, not jarring
+}
+
+// Mark interaction if they type or click inside the chat (cancels auto-close)
+function markChatInteraction() {
+  chatInteracted = true;
+  if (chatAutoCloseTimer) { clearTimeout(chatAutoCloseTimer); chatAutoCloseTimer = null; }
 }
 function renderChatQuick() {
   document.getElementById("chat-quick").innerHTML = CHAT_QUICK.map(q =>
     `<button onclick="askQuick('${q.replace(/'/g,"\\'")}')">${esc(q)}</button>`).join("");
 }
-function askQuick(q) { document.getElementById("chat-input").value = q; sendChat(); }
+function askQuick(q) { markChatInteraction(); document.getElementById("chat-input").value = q; sendChat(); }
 function botSay(text) {
   const body = document.getElementById("chat-body");
   const d = document.createElement("div");
@@ -2367,6 +2505,10 @@ function sendChat() {
 // ── INIT ──
 renderAmenities();
 loadState();
+// If the user arrived via a verification link, process it once Firebase is ready.
+setTimeout(handleVerifyLink, 1500);
+// Greet first-time visitors with the chat, auto-tuck after 10s if ignored.
+autoGreet();
 </script>
 </body>
 </html>
