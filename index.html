@@ -136,12 +136,23 @@ input, select, textarea { font-family:inherit; font-size:15px; }
 .card:nth-child(4){animation-delay:.12s} .card:nth-child(5){animation-delay:.16s}
 @keyframes cardIn { from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:translateY(0)} }
 .card-photo {
-  height:180px; background:linear-gradient(135deg,#F0EAF8,#F6F3FA); position:relative;
+  height:180px; position:relative;
   display:flex; align-items:center; justify-content:center; overflow:hidden;
+  background:linear-gradient(135deg,#F0EAF8,#F6F3FA);
 }
-.card-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform .45s cubic-bezier(.2,.8,.3,1); }
+/* Shimmer skeleton while the photo loads — gives a premium, intentional feel */
+.card-photo::before {
+  content:""; position:absolute; inset:0; z-index:0;
+  background:linear-gradient(100deg, #EEE7F7 30%, #F7F3FC 50%, #EEE7F7 70%);
+  background-size:200% 100%;
+  animation:shimmer 1.3s ease-in-out infinite;
+}
+.card-photo.has-loaded::before { display:none; }
+@keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+.card-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; opacity:0; transition:opacity .5s ease, transform .45s cubic-bezier(.2,.8,.3,1); }
+.card-photo img.loaded { opacity:1; }
 .card:hover .card-photo img { transform:scale(1.04); }
-.card-photo .noimg { color:var(--ink-3); font-size:13px; }
+.card-photo .noimg { color:var(--ink-3); font-size:13px; z-index:1; }
 .badge-verified {
   position:absolute; top:10px; left:10px; background:rgba(255,255,255,0.92); backdrop-filter:blur(8px);
   color:var(--green); border:1px solid rgba(89,42,138,0.25);
@@ -261,6 +272,34 @@ input, select, textarea { font-family:inherit; font-size:15px; }
 .contact-box .who { font-size:13.5px; font-weight:600; }
 .contact-box .email { font-size:13px; color:var(--green-2); font-weight:700; word-break:break-all; margin-top:3px; }
 .seek-pill { display:inline-block; background:var(--green-tint); border:1px solid #E5D8F5; color:var(--green-2); font-weight:700; font-size:12.5px; padding:6px 13px; border-radius:99px; margin-bottom:12px; }
+
+/* ══ FEED HINT (explains each tab) ══ */
+.feed-hint { font-size:13px; color:var(--ink-2); margin:12px 2px 18px; line-height:1.5; font-weight:500; }
+.seeker-photo-row { display:flex; align-items:center; gap:14px; }
+.seeker-photo-preview {
+  width:72px; height:72px; border-radius:50%; border:2px dashed var(--line-2);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  color:var(--ink-3); font-size:11px; font-weight:600; text-align:center; line-height:1.2;
+  background:var(--bg); overflow:hidden; transition:border-color .15s;
+}
+.seeker-photo-preview:hover { border-color:var(--purple); color:var(--purple); }
+
+/* ══ FACEBOOK-STYLE SEEKER CARDS ══ */
+.seeker-card { padding:0; cursor:pointer; }
+.seeker-top { display:flex; align-items:center; gap:12px; padding:16px 16px 10px; }
+.seeker-avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+.seeker-avatar-fallback { display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--purple),#7A4BB5); color:#fff; font-weight:800; font-size:20px; }
+.seeker-who { min-width:0; }
+.seeker-name { font-weight:700; font-size:15px; color:var(--ink); display:flex; align-items:center; gap:5px; }
+.mini-verified { background:var(--purple); color:#fff; width:16px; height:16px; border-radius:50%; font-size:10px; display:inline-flex; align-items:center; justify-content:center; }
+.seeker-sub { font-size:12px; color:var(--ink-3); margin-top:1px; }
+.seeker-body { padding:0 16px 12px; }
+.seeker-headline { font-size:15.5px; font-weight:600; color:var(--ink); line-height:1.4; margin-bottom:4px; }
+.seeker-detail { font-size:13px; color:var(--ink-2); margin-bottom:8px; }
+.seeker-desc { font-size:13.5px; color:var(--ink); line-height:1.55; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.seeker-foot { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-top:1px solid var(--line); }
+.seeker-budget { font-size:13px; font-weight:700; color:var(--purple); }
+.seeker-msg { font-size:13px; font-weight:700; color:var(--green-2); }
 
 /* SOCIAL AUTH */
 .social-btn {
@@ -534,6 +573,7 @@ input, select, textarea { font-family:inherit; font-size:15px; }
 .about-legal { font-size:11px; color:var(--ink-3); line-height:1.5; text-align:center; padding-top:14px; border-top:1px solid var(--line); }
 
 /* ══ FEED TABS ══ */
+.feed-tabs { display:flex; gap:8px; margin-bottom:6px; }
 .feed-tab {
   flex:1; padding:12px; border:1px solid var(--line-2); background:#fff; color:var(--ink-2);
   border-radius:12px; font-size:14px; font-weight:700; font-family:var(--font-d); cursor:pointer;
@@ -560,9 +600,26 @@ input, select, textarea { font-family:inherit; font-size:15px; }
 }
 #chat-fab:hover { transform: translateY(-2px); }
 #chat-fab:active { transform: scale(0.94); }
+/* Subtle greeting nudge — small, friendly, non-intrusive */
+#chat-nudge {
+  position: fixed; bottom: 96px; right: 20px; z-index: 45;
+  background: #fff; color: var(--ink); border: 1px solid var(--line-2);
+  border-radius: 16px 16px 4px 16px; padding: 12px 38px 12px 16px;
+  font-size: 13.5px; font-weight: 600; max-width: 230px; line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(23,37,31,0.18); cursor: pointer;
+  opacity: 0; transform: translateY(8px) scale(0.96); pointer-events: none;
+  transition: opacity .3s ease, transform .3s cubic-bezier(.2,.8,.3,1);
+}
+#chat-nudge.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+#chat-nudge .nudge-close {
+  position: absolute; top: 6px; right: 8px; background: none; border: none;
+  color: var(--ink-3); font-size: 12px; cursor: pointer; padding: 2px 4px; line-height: 1;
+}
+#chat-nudge .nudge-close:hover { color: var(--ink); }
+
 #chat-panel {
   position: fixed; bottom: 86px; right: 20px; z-index: 46;
-  width: 340px; max-width: calc(100vw - 32px); height: 460px; max-height: 70vh;
+  width: 340px; max-width: calc(100vw - 32px); height: 440px; max-height: 66vh;
   background: #fff; border: 1px solid var(--line-2); border-radius: 18px;
   box-shadow: 0 16px 48px rgba(23,37,31,0.22);
   display: none; flex-direction: column; overflow: hidden;
@@ -596,7 +653,7 @@ input, select, textarea { font-family:inherit; font-size:15px; }
   padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 @media (max-width: 680px) {
-  #chat-panel { bottom: 80px; height: 60vh; }
+  #chat-panel { bottom: 80px; height: 440px; max-height: 62vh; }
   #chat-fab { bottom: 88px; }
   .chat-input-row input { font-size: 16px; }
 }
@@ -670,9 +727,10 @@ input, select, textarea { font-family:inherit; font-size:15px; }
 
 <div class="controls">
   <div class="feed-tabs">
-    <button class="feed-tab on" id="tab-places" onclick="setFeed('places')">Places available</button>
-    <button class="feed-tab" id="tab-people" onclick="setFeed('people')">People looking</button>
+    <button class="feed-tab on" id="tab-places" onclick="setFeed('places')">🏠 Available places</button>
+    <button class="feed-tab" id="tab-people" onclick="setFeed('people')">🙋 People who need a place</button>
   </div>
+  <div class="feed-hint" id="feed-hint">Places students are subleasing right now — browse and message anyone.</div>
   <div class="search-row">
     <div class="search-box">
       <span style="color:var(--ink-3);">⌕</span>
@@ -829,6 +887,16 @@ input, select, textarea { font-family:inherit; font-size:15px; }
       <div id="photo-thumbs" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;"></div>
       <input type="file" id="photo-input" accept="image/*" multiple style="display:none;" onchange="handlePhoto(this)"/>
     </div>
+    <div class="f" id="f-seeker-photo" style="display:none;">
+      <label>Your photo (optional, but helps people trust you)</label>
+      <div class="seeker-photo-row">
+        <div class="seeker-photo-preview" id="seeker-photo-preview" onclick="document.getElementById('seeker-photo-input').click()">
+          <span>Add<br/>photo</span>
+        </div>
+        <div class="hint" style="flex:1;">A friendly profile pic makes people way more likely to reach out. Just of you — not a place.</div>
+      </div>
+      <input type="file" id="seeker-photo-input" accept="image/*" style="display:none;" onchange="handleSeekerPhoto(this)"/>
+    </div>
     <div class="f" id="f-video">
       <label>Video tour link (optional)</label>
       <input id="p-video" type="url" placeholder="Paste a TikTok, YouTube, or Drive link"/>
@@ -905,14 +973,6 @@ input, select, textarea { font-family:inherit; font-size:15px; }
       <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.1A6.97 6.97 0 0 1 5.47 12c0-.73.13-1.44.37-2.1V7.06H2.18A11 11 0 0 0 1 12c0 1.77.43 3.45 1.18 4.94l3.66-2.84z"/><path fill="#EA4335" d="M12 5.37c1.62 0 3.06.56 4.21 1.64l3.16-3.16C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.37 12 5.37z"/></svg>
       Continue with Google
     </button>
-    <button class="social-btn" onclick="socialSignIn('apple')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.86-3.08.38-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.38C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-      Continue with Apple
-    </button>
-    <button class="social-btn" onclick="socialSignIn('microsoft')">
-      <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#F25022"/><rect x="13" y="1" width="10" height="10" fill="#7FBA00"/><rect x="1" y="13" width="10" height="10" fill="#00A4EF"/><rect x="13" y="13" width="10" height="10" fill="#FFB900"/></svg>
-      Continue with Microsoft
-    </button>
     <div class="auth-divider"><span>or sign in with email</span></div>
     <div class="f">
       <label>Email</label>
@@ -937,14 +997,6 @@ input, select, textarea { font-family:inherit; font-size:15px; }
     <button class="social-btn" onclick="socialSignIn('google')">
       <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.1A6.97 6.97 0 0 1 5.47 12c0-.73.13-1.44.37-2.1V7.06H2.18A11 11 0 0 0 1 12c0 1.77.43 3.45 1.18 4.94l3.66-2.84z"/><path fill="#EA4335" d="M12 5.37c1.62 0 3.06.56 4.21 1.64l3.16-3.16C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.37 12 5.37z"/></svg>
       Continue with Google
-    </button>
-    <button class="social-btn" onclick="socialSignIn('apple')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.86-3.08.38-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.38C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-      Continue with Apple
-    </button>
-    <button class="social-btn" onclick="socialSignIn('microsoft')">
-      <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#F25022"/><rect x="13" y="1" width="10" height="10" fill="#7FBA00"/><rect x="1" y="13" width="10" height="10" fill="#00A4EF"/><rect x="13" y="13" width="10" height="10" fill="#FFB900"/></svg>
-      Continue with Microsoft
     </button>
     <div class="auth-divider"><span>or sign up with email</span></div>
     <div class="f">
@@ -998,6 +1050,10 @@ input, select, textarea { font-family:inherit; font-size:15px; }
 </div>
 
 <!-- HELP CHATBOT -->
+<div id="chat-nudge" onclick="openChatFromNudge()">
+  <button class="nudge-close" onclick="event.stopPropagation(); document.getElementById('chat-nudge').classList.remove('show'); markChatInteraction();" aria-label="Dismiss">✕</button>
+  <span>👋 New here? Tap if you need a hand.</span>
+</div>
 <button id="chat-fab" onclick="toggleChat()" aria-label="Help">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
 </button>
@@ -1095,9 +1151,14 @@ function setFeed(f) {
   document.getElementById("tab-people").classList.toggle("on", f === "people");
   // hide the type chips on the People tab — they don't apply to seekers
   document.getElementById("type-chips").style.display = f === "people" ? "none" : "";
+  const hint = document.getElementById("feed-hint");
+  if (hint) hint.textContent = f === "people"
+    ? "Students searching for a sublease. See someone who'd fit your place? Message them."
+    : "Places students are subleasing right now — browse and message anyone.";
   applyFilters();
 }
 let pendingPhotos = [];
+let pendingSeekerPhoto = null;
 let postAfterAuth = false;
 let postMode = "have";
 let editingId = null;
@@ -1174,6 +1235,7 @@ function setPostMode(m) {
     ? "Free. Stays visible until you take it down. We'll email you the moment someone messages you — no need to keep checking back."
     : "Free. Let people with open leases find you — and we'll email you as soon as someone reaches out.";
   document.getElementById("f-photos").style.display = have ? "" : "none";
+  document.getElementById("f-seeker-photo").style.display = have ? "none" : "";
   document.getElementById("f-video").style.display = have ? "" : "none";
   document.getElementById("f-urgent").style.display = have ? "" : "none";
   document.getElementById("f-address").style.display = have ? "" : "none";
@@ -1257,6 +1319,19 @@ function fdate(ds) {
   return new Date(ds + "T12:00:00").toLocaleDateString("en-US", { month:"short", day:"numeric" });
 }
 
+function timeAgo(ts) {
+  if (!ts) return "recently";
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + "m ago";
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + "h ago";
+  const d = Math.floor(h / 24);
+  if (d < 7) return d + "d ago";
+  return new Date(ts).toLocaleDateString("en-US", { month:"short", day:"numeric" });
+}
+
 function applyFilters() {
   const q = (document.getElementById("q").value || "").toLowerCase();
   const maxP = parseInt(document.getElementById("max-price").value) || Infinity;
@@ -1294,26 +1369,34 @@ function renderGrid(list) {
     const p = firstPhoto(l);
     const photoCount = (l.photos && l.photos.length) || (l.photo ? 1 : 0);
     if (l.seeking) {
+      const av = l.avatar || "";
+      const initial = esc((l.poster || "?").trim()[0] || "?").toUpperCase();
       return `
-      <div class="card" onclick="openDetail('${l.id}')">
-        <div class="seek-band">
-          <span class="lbl">Looking for a place</span>
-          ${l.verified ? '<span class="badge-verified">Student verified</span>' : ''}
-        </div>
-        <div class="card-body">
-          <div class="card-title">${esc(l.title)}</div>
-          <div class="card-meta">${esc(l.loc)} · from ${fdate(l.from)}</div>
-          <div class="card-byline">by ${esc(l.poster)}</div>
-          <div class="card-tags">
-            <span class="tag gold">Up to $${Number(l.price).toLocaleString()}/mo</span>
+      <div class="card seeker-card" onclick="openDetail('${l.id}')">
+        <div class="seeker-top">
+          ${av
+            ? `<img class="seeker-avatar" src="${av}" alt="" loading="lazy"/>`
+            : `<div class="seeker-avatar seeker-avatar-fallback">${initial}</div>`}
+          <div class="seeker-who">
+            <div class="seeker-name">${esc(l.poster)}${l.verified ? ' <span class="mini-verified" title="Student verified">✓</span>' : ''}</div>
+            <div class="seeker-sub">Looking for a place · posted ${timeAgo(l.ts)}</div>
           </div>
+        </div>
+        <div class="seeker-body">
+          <div class="seeker-headline">${esc(l.title)}</div>
+          <div class="seeker-detail">${esc(l.loc)} · needs it from ${fdate(l.from)}${l.until ? ` to ${fdate(l.until)}` : ''}</div>
+          ${l.desc ? `<div class="seeker-desc">${esc(l.desc)}</div>` : ''}
+        </div>
+        <div class="seeker-foot">
+          <span class="seeker-budget">Budget: up to $${Number(l.price).toLocaleString()}/mo</span>
+          <span class="seeker-msg">Message →</span>
         </div>
       </div>`;
     }
     return `
     <div class="card" onclick="openDetail('${l.id}')">
       <div class="card-photo">
-        ${p ? `<img src="${p}" alt="" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')"/>` : '<span class="noimg">No photo yet</span>'}
+        ${p ? `<img src="${p}" alt="" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.parentElement.classList.add('has-loaded');" onerror="this.classList.add('loaded');this.parentElement.classList.add('has-loaded');"/>` : '<span class="noimg">No photo yet</span>'}
         ${l.verified ? '<span class="badge-verified">Student verified</span>' : ''}
         ${l.urgent ? '<span class="badge-urgent">Urgent</span>' : ''}
         ${photoCount > 1 ? `<span class="photo-count">${photoCount} photos</span>` : ''}
@@ -1340,8 +1423,13 @@ function renderGrid(list) {
 // attaches, leaving them stuck invisible. Force-mark any already-complete image.
 function markLoadedImages(root) {
   (root || document).querySelectorAll("img").forEach(img => {
-    if (img.complete && img.naturalWidth > 0) img.classList.add("loaded");
-    else img.addEventListener("load", () => img.classList.add("loaded"), { once: true });
+    const reveal = () => {
+      img.classList.add("loaded");
+      const ph = img.closest(".card-photo");
+      if (ph) ph.classList.add("has-loaded");
+    };
+    if (img.complete && img.naturalWidth > 0) reveal();
+    else img.addEventListener("load", reveal, { once: true });
   });
 }
 
@@ -1778,6 +1866,14 @@ function requireFB() {
   return true;
 }
 
+// Opens the post sheet ONLY if the user is email-verified. Used after signup/signin
+// so a brand-new unverified account can't slip straight into posting.
+function openPostGated() {
+  if (!user) return;
+  if (!user.emailVerified) { showVerifyBanner(); toast("Verify your email first — check your inbox for the link from Ava."); return; }
+  openSheet("post");
+}
+
 function startPost() {
   if (!requireFB()) return;
   editingId = null;
@@ -1799,15 +1895,35 @@ function handlePhoto(input) {
     reader.onload = e => { img.src = e.target.result; };
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const scale = Math.min(1, 800 / img.width);
+      const scale = Math.min(1, 1000 / img.width);
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
       canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-      pendingPhotos.push(canvas.toDataURL("image/jpeg", 0.55));
+      pendingPhotos.push(canvas.toDataURL("image/jpeg", 0.62));
       renderThumbs();
     };
     reader.readAsDataURL(file);
   });
+  input.value = "";
+}
+
+function handleSeekerPhoto(input) {
+  const file = (input.files || [])[0];
+  if (!file) return;
+  const img = new Image();
+  const reader = new FileReader();
+  reader.onload = e => { img.src = e.target.result; };
+  img.onload = () => {
+    // square crop, compressed — it's just an avatar
+    const canvas = document.createElement("canvas");
+    const size = Math.min(img.width, img.height);
+    canvas.width = 400; canvas.height = 400;
+    canvas.getContext("2d").drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, 400, 400);
+    pendingSeekerPhoto = canvas.toDataURL("image/jpeg", 0.7);
+    const prev = document.getElementById("seeker-photo-preview");
+    if (prev) prev.innerHTML = `<img src="${pendingSeekerPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+  };
+  reader.readAsDataURL(file);
   input.value = "";
 }
 
@@ -1871,7 +1987,7 @@ async function submitListing() {
     ts: editing && original ? original.ts : Date.now(),
     city: CITY,
     verified: !!user.verified,
-    avatar: user.avatar || "",
+    avatar: seeking ? (pendingSeekerPhoto || user.avatar || "") : (user.avatar || ""),
     title, price, loc, from,
     until: document.getElementById("p-until").value || "",
     type: document.getElementById("p-type").value,
@@ -1885,11 +2001,18 @@ async function submitListing() {
   };
   listing.amenities = seeking ? [] : [...selectedAmenities];
   const addr = document.getElementById("p-address").value.trim();
+  let geocodeFailed = false;
   if (!seeking) {
     if (pendingGeo) { listing.lat = pendingGeo.lat; listing.lng = pendingGeo.lng; listing.address = addr || "Pinned location"; }
     else if (addr) {
       const geo = await geocodeAddress(addr);
       if (geo) { listing.lat = geo.lat; listing.lng = geo.lng; listing.address = addr; }
+      else { geocodeFailed = true; listing.address = addr; }  // keep the address text even if we couldn't map it
+    }
+    // If editing and the address was cleared, drop the old pin
+    if (editing && !addr && !pendingGeo) {
+      listing.lat = firebase.firestore.FieldValue.delete();
+      listing.lng = firebase.firestore.FieldValue.delete();
     }
   }
   if (JSON.stringify(listing).length > 950000) { toast("Photos are too large — remove one and try again."); return; }
@@ -1898,6 +2021,9 @@ async function submitListing() {
     else await db.collection("listings").add(listing);
   } catch(e) { toast("Couldn't save — check your connection and try again."); return; }
   pendingPhotos = [];
+  pendingSeekerPhoto = null;
+  const spp = document.getElementById("seeker-photo-preview");
+  if (spp) spp.innerHTML = "<span>Add<br/>photo</span>";
   pendingGeo = null;
   selectedAmenities = [];
   renderAmenities();
@@ -1912,7 +2038,11 @@ async function submitListing() {
   document.getElementById("post-heading").textContent = "Post your sublease";
   document.querySelector("#ov-post .btn-main").textContent = "Publish listing";
   closeSheet("post");
-  toast(wasEditing ? "Listing updated." : (seeking ? "You're on the board — people with open leases can now find you." : "Listing is live — share the link wherever people are looking."));
+  if (geocodeFailed) {
+    toast(wasEditing ? "Saved — but we couldn't find that address on the map. Try a full street address (e.g. 33 East 10th St)." : "Posted — but we couldn't map that address. Edit it with a full street address to add a map pin.");
+  } else {
+    toast(wasEditing ? "Listing updated." : (seeking ? "You're on the board — people with open leases can now find you." : "Listing is live — share the link wherever people are looking."));
+  }
 }
 
 // ── SOCIAL SIGN-IN ──
@@ -1924,7 +2054,10 @@ async function socialSignIn(providerName) {
   if (!requireFB()) return;
   let provider;
   if (providerName === "google") provider = new firebase.auth.GoogleAuthProvider();
-  else provider = new firebase.auth.OAuthProvider(providerName === "apple" ? "apple.com" : "microsoft.com");
+  else {
+    provider = new firebase.auth.OAuthProvider("microsoft.com");
+    provider.setCustomParameters({ tenant: "common" }); // any Microsoft/Outlook account, not just one org
+  }
   try {
     const result = await auth.signInWithPopup(provider);
     const u = result.user;
@@ -1944,7 +2077,7 @@ async function socialSignIn(providerName) {
     }
     closeSheet("auth"); closeSheet("signup");
     toast(isEduEmail(email) ? "Signed in — Student verified." : "Signed in. Welcome to Pirate Sublease.");
-    if (postAfterAuth) { postAfterAuth = false; setTimeout(() => openSheet("post"), 400); }
+    if (postAfterAuth) { postAfterAuth = false; setTimeout(openPostGated, 400); }
   } catch(e) {
     if (e.code === "auth/operation-not-allowed" || e.code === "auth/configuration-not-found") {
       toast("That sign-in method isn't set up yet — use Google or email for now.");
@@ -2129,7 +2262,7 @@ async function finishAvatar(save) {
   pendingAvatar = null;
   closeSheet("avatar");
   toast(user && user.verified ? "You're in — Student verified." : "You're in. Welcome to Pirate Sublease.");
-  if (postAfterAuth) { postAfterAuth = false; openSheet("post"); }
+  if (postAfterAuth) { postAfterAuth = false; openPostGated(); }
 }
 
 async function doResetPassword() {
@@ -2162,7 +2295,7 @@ async function doSignIn() {
     await auth.signInWithEmailAndPassword(email, pass);
     closeSheet("auth");
     toast("Signed in. Welcome back.");
-    if (postAfterAuth) { postAfterAuth = false; setTimeout(() => openSheet("post"), 400); }
+    if (postAfterAuth) { postAfterAuth = false; setTimeout(openPostGated, 400); }
   } catch(e) {
     if (e.code === "auth/user-not-found") hint.textContent = "No account with that email — create one first.";
     else if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") hint.textContent = "Wrong password — try again.";
@@ -2436,34 +2569,39 @@ function toggleChat() {
   if (open) { chatInteracted = true; if (chatAutoCloseTimer) { clearTimeout(chatAutoCloseTimer); chatAutoCloseTimer = null; } }
 }
 
-// Auto-greet: pop the chat open on first visit, then tuck it back into the
-// circle after 10s if the person hasn't interacted with it.
+// Auto-greet: instead of a jarring full-panel takeover, show a small friendly
+// bubble next to the chat circle. Tap it to open; ignore it and it fades away.
 function autoGreet() {
-  // Only greet once per browser (don't nag returning visitors every load)
   try { if (sessionStorage.getItem("greeted")) return; sessionStorage.setItem("greeted", "1"); } catch(e) {}
   setTimeout(() => {
     const panel = document.getElementById("chat-panel");
     if (!panel || panel.classList.contains("open")) return;
-    panel.classList.add("open");
-    if (!chatStarted) {
-      chatStarted = true;
-      botSay("Ahoy! 👋 Welcome to Pirate Sublease — the free sublease board for Greenville students. Need a hand getting started?");
-      renderChatQuick();
-    }
-    // Start the 10s auto-close countdown
+    const nudge = document.getElementById("chat-nudge");
+    if (!nudge) return;
+    nudge.classList.add("show");
+    // Fades away on its own after 8s if ignored
     chatAutoCloseTimer = setTimeout(() => {
-      if (!chatInteracted) {
-        const p = document.getElementById("chat-panel");
-        if (p) p.classList.remove("open");
-      }
-    }, 10000);
-  }, 1200); // small delay so it feels intentional, not jarring
+      if (!chatInteracted) nudge.classList.remove("show");
+    }, 8000);
+  }, 1400);
+}
+
+// Tapping the nudge opens the full chat with the greeting
+function openChatFromNudge() {
+  const nudge = document.getElementById("chat-nudge");
+  if (nudge) nudge.classList.remove("show");
+  chatInteracted = true;
+  if (chatAutoCloseTimer) { clearTimeout(chatAutoCloseTimer); chatAutoCloseTimer = null; }
+  const panel = document.getElementById("chat-panel");
+  if (!panel.classList.contains("open")) toggleChat();
 }
 
 // Mark interaction if they type or click inside the chat (cancels auto-close)
 function markChatInteraction() {
   chatInteracted = true;
   if (chatAutoCloseTimer) { clearTimeout(chatAutoCloseTimer); chatAutoCloseTimer = null; }
+  const nudge = document.getElementById("chat-nudge");
+  if (nudge) nudge.classList.remove("show");
 }
 function renderChatQuick() {
   document.getElementById("chat-quick").innerHTML = CHAT_QUICK.map(q =>
