@@ -1422,7 +1422,7 @@ function applyFilters() {
       || (activeType === "urgent" ? l.urgent
       : l.type === activeType);
     return mFeed && mQ && mP && mT;
-  }).sort((a,b) => (b.urgent - a.urgent) || (b.ts - a.ts));
+  }).sort((a,b) => (b.ts || 0) - (a.ts || 0)); // newest first; urgent badge shown separately on the card
   renderGrid(res);
 }
 
